@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 240 10% 4%;
+  /* Gray cards like bg-slate-100/200 */
+  --card: 210 40% 96%;
+  --card-foreground: 240 10% 4%;
+  
+  --primary: 240 10% 4%;
+  --primary-foreground: 0 0% 98%;
+  
+  --secondary: 0 0% 100%;
+  --secondary-foreground: 240 10% 4%;
+  
+  --muted: 210 40% 96%;
+  --muted-foreground: 240 5% 45%;
+  
+  --accent: 346 87% 60%; /* The pinkish-red from the image */
+  --accent-foreground: 0 0% 100%;
+  
+  --radius: 1.5rem; /* Large radius for cards */
+}
+
+.dark {
+  --background: 240 10% 4%;
+  --foreground: 0 0% 98%;
+  --card: 240 5% 12%;
+  --card-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 10% 4%;
+  --secondary: 240 5% 20%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 5% 15%;
+  --muted-foreground: 240 5% 65%;
+}
+
+@layer base {
+  * {
+    @apply border-gray-200 dark:border-gray-800;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom Utilities */
+.card-soft {
+  @apply bg-[#f2f4f7] dark:bg-[#1c1c1e] rounded-[24px] p-5;
+}
+
+.pill-button {
+  @apply px-4 py-1.5 bg-white dark:bg-[#2c2c2e] text-foreground font-semibold text-sm rounded-full shadow-sm;
+}
+
+.pill-button-primary {
+  @apply px-6 py-4 w-full bg-black dark:bg-white text-white dark:text-black font-semibold text-base rounded-full;
+}
