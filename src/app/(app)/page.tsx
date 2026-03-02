@@ -63,7 +63,7 @@ export default function Home() {
             {/* Workout Card */}
             <div className="card-soft space-y-5">
               <div className="flex justify-between items-start">
-                <span className="font-semibold text-[15px]">Today's training</span>
+                <span className="font-semibold text-[15px]">Today&apos;s training</span>
                 <button 
                   onClick={() => setActiveView('calculator')}
                   className="pill-button text-[13px]"
