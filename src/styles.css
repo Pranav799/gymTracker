@@ -46,6 +46,34 @@
   --transition-slow: 0.35s ease;
 }
 
+/* === Light Mode Tokens === */
+:root[data-theme='light'] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-input: #ffffff;
+  --bg-input-focus: #f1f5f9;
+
+  --accent: #4f46e5;
+  --accent-light: #6c63ff;
+  --accent-dark: #3730a3;
+  --accent-glow: rgba(79, 70, 229, 0.1);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --border: rgba(79, 70, 229, 0.15);
+  --border-focus: rgba(79, 70, 229, 0.4);
+  --border-input: rgba(0, 0, 0, 0.08);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1);
+  --shadow-accent: 0 0 20px rgba(79, 70, 229, 0.15);
+}
+
 /* === Reset & Base === */
 *, *::before, *::after {
   box-sizing: border-box;

@@ -14,25 +14,16 @@
           <span class="brand-name">PermissionMapper</span>
         </div>
       </div>
-      <div class="header-actions" *ngIf="step() === 'review'">
-        <span class="badge-count">{{ permissions().length }} permissions</span>
-        <button class="btn btn-ghost btn-sm" (click)="goBack()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
+
+      <div class="header-actions">
+        <button class="theme-toggle" (click)="toggleTheme()" [title]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+          <svg *ngIf="isDarkMode()" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
           </svg>
-          Parse New
+          <svg *ngIf="!isDarkMode()" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
         </button>
-      </div>
-    </div>
-    <div class="header-progress">
-      <div class="progress-step" [class.active]="step() === 'input'" [class.done]="step() === 'review'">
-        <span class="step-num">1</span>
-        <span class="step-label">Paste Code</span>
-      </div>
-      <div class="progress-line" [class.done]="step() === 'review'"></div>
-      <div class="progress-step" [class.active]="step() === 'review'">
-        <span class="step-num">2</span>
-        <span class="step-label">Review & Copy</span>
       </div>
     </div>
   </header>
@@ -70,7 +61,8 @@
           <textarea
             id="service-code-input"
             class="code-textarea"
-            [(ngModel)]="serviceCode"
+            [ngModel]="serviceCode()"
+            (ngModelChange)="serviceCode.set($event)"
             placeholder="Paste your Angular service TypeScript code here..."
             spellcheck="false"
             autocomplete="off"
@@ -85,7 +77,8 @@
             <input
               class="prefix-input"
               type="text"
-              [(ngModel)]="servicePrefix"
+              [ngModel]="servicePrefix()"
+              (ngModelChange)="servicePrefix.set($event)"
               spellcheck="false"
             />
           </div>
@@ -112,73 +105,85 @@
     <div class="step-panel" *ngIf="step() === 'review'">
 
       <!-- Status Filters -->
-      <div class="status-filters">
-        <button
-          class="status-tab"
-          [class.active]="filterStatus() === 'active'"
-          (click)="filterStatus.set('active')"
-        >
-          Pending
-          <span class="status-count">{{ statusCounts()['active'] }}</span>
-        </button>
-        <button
-          class="status-tab"
-          [class.active]="filterStatus() === 'completed'"
-          (click)="filterStatus.set('completed')"
-        >
-          Completed
-          <span class="status-count">{{ statusCounts()['completed'] }}</span>
-        </button>
-        <div class="delete-on-copy-wrap" *ngIf="filterStatus() === 'completed'">
-          <label class="checkbox-container">
-            <input type="checkbox" [(ngModel)]="deleteOnCopy" />
-            <span class="checkbox-label">Delete on copy</span>
-          </label>
-        </div>
-      </div>
+
 
       <!-- Toolbar -->
       <div class="toolbar">
-        <div class="toolbar-left">
-          <h1 class="step-title-sm">Permissions</h1>
-          <div class="search-box">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
-            <input
-              id="search-input"
-              type="text"
-              [ngModel]="searchQuery()"
-              (ngModelChange)="searchQuery.set($event)"
-              placeholder="Search permissions..."
-              class="search-input"
-            />
-            <button class="search-clear" *ngIf="searchQuery()" (click)="searchQuery.set('')">×</button>
+        <div class="toolbar-row row-1">
+          <div class="toolbar-nav">
+            <button class="btn-back" (click)="goBack()" title="Go back">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <h1 class="toolbar-title">Permissions</h1>
+
+            <div class="minimal-search">
+              <label class="search-label">Search</label>
+              <input
+                id="search-input"
+                type="text"
+                [ngModel]="searchQuery()"
+                (ngModelChange)="searchQuery.set($event)"
+                placeholder="Type to filter..."
+                class="line-input"
+              />
+              <button class="search-clear-mini" *ngIf="searchQuery()" (click)="searchQuery.set('')">×</button>
+            </div>
+          </div>
+          
+          <div class="status-filters">
+            <button
+              class="status-tab"
+              [class.active]="filterStatus() === 'active'"
+              (click)="filterStatus.set('active')"
+            >
+              Pending
+              <span class="status-count">{{ statusCounts()['active'] }}</span>
+            </button>
+            <button
+              class="status-tab"
+              [class.active]="filterStatus() === 'completed'"
+              (click)="filterStatus.set('completed')"
+            >
+              Completed
+              <span class="status-count">{{ statusCounts()['completed'] }}</span>
+            </button>
           </div>
         </div>
-        <button class="btn btn-primary btn-sm" (click)="addPermission()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Add Permission
-        </button>
+
+        <div class="toolbar-row row-2">
+          <!-- Method Filters (Dynamic labels) -->
+          <div class="method-filters">
+            <button
+              *ngFor="let m of (filterStatus() === 'active' ? methods : actionMethods)"
+              class="filter-btn"
+              [class.active]="filterMethod() === m"
+              (click)="filterMethod.set(m)"
+              [style.--btn-color]="m === 'ALL' ? '#6c63ff' : getMethodColor(m)"
+            >
+              <span class="filter-label">{{ m }}</span>
+              <span class="filter-count">{{ methodCounts()[m] || 0 }}</span>
+            </button>
+          </div>
+
+          <div class="toolbar-actions" *ngIf="filterStatus() === 'completed'">
+            <button 
+              class="toggle-btn" 
+              [class.active]="deleteOnCopy()"
+              (click)="deleteOnCopy.set(!deleteOnCopy())"
+              title="Toggle delete on copy"
+            >
+              <div class="toggle-track">
+                <div class="toggle-thumb"></div>
+              </div>
+              <span class="toggle-label">Delete on Copy</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <!-- Method Filters -->
-      <div class="method-filters" *ngIf="filterStatus() === 'active'">
-        <button
-          *ngFor="let m of methods"
-          class="filter-btn"
-          [class.active]="filterMethod() === m"
-          (click)="filterMethod.set(m)"
-          [style.--btn-color]="m === 'ALL' ? '#6c63ff' : getMethodColor(m)"
-        >
-          <span class="filter-label">{{ m }}</span>
-          <span class="filter-count">{{ methodCounts()[m] || 0 }}</span>
-        </button>
-      </div>
-
-      <!-- Result Count Row -->
+      <!-- Result Count Row (Pending only) -->
       <div class="result-row" *ngIf="filteredPermissions().length > 0 && filterStatus() === 'active'">
         <span class="result-count">
           Showing {{ filteredPermissions().length }} permissions

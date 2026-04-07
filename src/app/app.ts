@@ -36,6 +36,7 @@ export class App {
   globalCopied = signal(false);
   deleteOnCopy = signal(false);
   parseError = signal('');
+  isDarkMode = signal(true);
 
   // Derived
   filteredPermissions = computed(() => {
@@ -48,18 +49,28 @@ export class App {
         p.permissionName.toLowerCase().includes(q) ||
         p.endpoint.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q);
-      const matchMethod = m === 'ALL' || p.method === m;
+      
+      let matchMethod = m === 'ALL';
+      if (!matchMethod) {
+        if (s === 'active') {
+          matchMethod = p.method === m;
+        } else {
+          matchMethod = this.getPermissionAction(p.method) === m;
+        }
+      }
+      
       return matchSearch && matchMethod;
     });
   });
 
   methodCounts = computed(() => {
-    const counts: Record<string, number> = { ALL: 0, GET: 0, POST: 0, PUT: 0, DELETE: 0, PATCH: 0 };
+    const counts: Record<string, number> = { ALL: 0 };
     const s = this.filterStatus();
     this.permissions().forEach(p => {
       if (p.status === s) {
         counts['ALL']++;
-        counts[p.method] = (counts[p.method] || 0) + 1;
+        const key = s === 'active' ? p.method : this.getPermissionAction(p.method);
+        counts[key] = (counts[key] || 0) + 1;
       }
     });
     return counts;
@@ -73,9 +84,13 @@ export class App {
   });
 
   groupedCompletedPermissions = computed(() => {
+    const filter = this.filterMethod();
     const groups: Record<string, ParsedPermission[]> = {};
+    
     this.permissions().filter(p => p.status === 'completed').forEach(p => {
       const action = this.getPermissionAction(p.method);
+      if (filter !== 'ALL' && action !== filter) return;
+      
       if (!groups[action]) groups[action] = [];
       groups[action].push(p);
     });
@@ -83,6 +98,7 @@ export class App {
   });
 
   readonly methods = ['ALL', 'GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
+  readonly actionMethods = ['ALL', 'CREATE', 'READ', 'UPDATE', 'DELETE'];
 
   parseServiceCode(): void {
     const code = this.serviceCode();
@@ -105,6 +121,12 @@ export class App {
 
     this.permissions.set(parsed);
     this.step.set('review');
+  }
+
+  toggleTheme(): void {
+    this.isDarkMode.update(v => !v);
+    const theme = this.isDarkMode() ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
   }
 
   private extractPermissions(code: string): ParsedPermission[] {
@@ -169,7 +191,7 @@ export class App {
       const m = body.match(regex);
       if (m) {
         // Clean up template literal interpolations for display
-        let url = m[1].replace(/\$\{[^}]+\}/g, '{id}').trim();
+        let url = m[1].replace(/\$\{[^}]+\}/g, ':param').trim();
         return { method, url };
       }
     }
@@ -177,7 +199,7 @@ export class App {
     // Try extracting from a url variable
     const urlVarMatch = body.match(/(?:const|let|var)\s+url\s*=\s*[`'"]([\s\S]*?)[`'"]/);
     if (urlVarMatch) {
-      const urlStr = urlVarMatch[1].replace(/\$\{[^}]+\}/g, '{param}').trim();
+      const urlStr = urlVarMatch[1].replace(/\$\{[^}]+\}/g, ':param').trim();
       // Now find which HTTP method uses this url
       for (const { regex, method } of patterns) {
         const altRegex = new RegExp(regex.source.replace(/\[([\s\S]*?)\]/, '[A-Za-z]').toString());
@@ -227,7 +249,7 @@ export class App {
       for (const { regex, method } of httpPatterns) {
         const m = line.match(regex);
         if (m) {
-          const url = m[1].replace(/\$\{[^}]+\}/g, '{id}');
+          const url = m[1].replace(/\$\{[^}]+\}/g, ':param');
           const name = currentMethod || 'unknown';
           const action = this.getPermissionAction(method);
           const resourceName = this.camelToPermissionName(name);
@@ -263,7 +285,7 @@ export class App {
 
   private generateDescription(methodName: string, httpMethod: string, url: string): string {
     const parts = url.split('/').filter(Boolean);
-    const resource = parts[parts.length - 1]?.replace(/-/g, ' ').replace(/\{[^}]+\}/g, '').trim() || 'resource';
+    const resource = parts[parts.length - 1]?.replace(/-/g, ' ').replace(/(:[\w-]+|\{[^}]+\})/g, '').trim() || 'resource';
 
     const verbMap: Record<string, string> = {
       GET: 'Retrieve',
@@ -368,8 +390,11 @@ export class App {
   getMethodColor(method: string): string {
     const map: Record<string, string> = {
       GET: '#10b981',
+      READ: '#10b981',
       POST: '#3b82f6',
+      CREATE: '#3b82f6',
       PUT: '#f59e0b',
+      UPDATE: '#f59e0b',
       DELETE: '#ef4444',
       PATCH: '#a855f7',
     };
