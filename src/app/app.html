@@ -1,0 +1,398 @@
+<div class="app-shell">
+
+  <!-- ===== HEADER ===== -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">PermissionMapper</span>
+        </div>
+      </div>
+      <div class="header-actions" *ngIf="step() === 'review'">
+        <span class="badge-count">{{ permissions().length }} permissions</span>
+        <button class="btn btn-ghost btn-sm" (click)="goBack()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          Parse New
+        </button>
+      </div>
+    </div>
+    <div class="header-progress">
+      <div class="progress-step" [class.active]="step() === 'input'" [class.done]="step() === 'review'">
+        <span class="step-num">1</span>
+        <span class="step-label">Paste Code</span>
+      </div>
+      <div class="progress-line" [class.done]="step() === 'review'"></div>
+      <div class="progress-step" [class.active]="step() === 'review'">
+        <span class="step-num">2</span>
+        <span class="step-label">Review & Copy</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main class="app-main">
+
+    <!-- >>>  STEP 1: INPUT  <<< -->
+    <div class="step-panel" *ngIf="step() === 'input'" [@fadeIn]>
+
+      <div class="step-header">
+        <h1 class="step-title">Paste Angular Service Code</h1>
+        <p class="step-subtitle">Drop in any Angular service file, we will do the rest</p>
+      </div>
+
+      <div class="input-layout">
+
+        <div class="textarea-card">
+          <div class="card-header">
+            <div class="card-title-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+              </svg>
+              <span>Service Code</span>
+              <span class="char-count">{{ serviceCode().length }} chars</span>
+            </div>
+            <button class="btn-icon-sm" title="Load example" (click)="serviceCode.set(sampleCode)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+              Example
+            </button>
+          </div>
+          <textarea
+            id="service-code-input"
+            class="code-textarea"
+            [(ngModel)]="serviceCode"
+            placeholder="Paste your Angular service TypeScript code here..."
+            spellcheck="false"
+            autocomplete="off"
+          ></textarea>
+        </div>
+
+        <div class="right-panel">
+
+
+          <div class="info-card prefix-card">
+            <h3 class="info-title">Service Prefix</h3>
+            <input
+              class="prefix-input"
+              type="text"
+              [(ngModel)]="servicePrefix"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="error-card" *ngIf="parseError()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>{{ parseError() }}</span>
+          </div>
+
+          <button id="parse-btn" class="btn btn-primary btn-lg" (click)="parseServiceCode()" [disabled]="!serviceCode().trim()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            Extract Permissions
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- >>>  STEP 2: REVIEW  <<< -->
+    <div class="step-panel" *ngIf="step() === 'review'">
+
+      <!-- Status Filters -->
+      <div class="status-filters">
+        <button
+          class="status-tab"
+          [class.active]="filterStatus() === 'active'"
+          (click)="filterStatus.set('active')"
+        >
+          Pending
+          <span class="status-count">{{ statusCounts()['active'] }}</span>
+        </button>
+        <button
+          class="status-tab"
+          [class.active]="filterStatus() === 'completed'"
+          (click)="filterStatus.set('completed')"
+        >
+          Completed
+          <span class="status-count">{{ statusCounts()['completed'] }}</span>
+        </button>
+        <div class="delete-on-copy-wrap" *ngIf="filterStatus() === 'completed'">
+          <label class="checkbox-container">
+            <input type="checkbox" [(ngModel)]="deleteOnCopy" />
+            <span class="checkbox-label">Delete on copy</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <h1 class="step-title-sm">Permissions</h1>
+          <div class="search-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              id="search-input"
+              type="text"
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+              placeholder="Search permissions..."
+              class="search-input"
+            />
+            <button class="search-clear" *ngIf="searchQuery()" (click)="searchQuery.set('')">×</button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" (click)="addPermission()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add Permission
+        </button>
+      </div>
+
+      <!-- Method Filters -->
+      <div class="method-filters" *ngIf="filterStatus() === 'active'">
+        <button
+          *ngFor="let m of methods"
+          class="filter-btn"
+          [class.active]="filterMethod() === m"
+          (click)="filterMethod.set(m)"
+          [style.--btn-color]="m === 'ALL' ? '#6c63ff' : getMethodColor(m)"
+        >
+          <span class="filter-label">{{ m }}</span>
+          <span class="filter-count">{{ methodCounts()[m] || 0 }}</span>
+        </button>
+      </div>
+
+      <!-- Result Count Row -->
+      <div class="result-row" *ngIf="filteredPermissions().length > 0 && filterStatus() === 'active'">
+        <span class="result-count">
+          Showing {{ filteredPermissions().length }} permissions
+        </span>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="filteredPermissions().length === 0">
+        <div class="empty-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </div>
+        <p class="empty-title">No permissions found</p>
+        <p class="empty-sub">Try adjusting your search or method filter</p>
+      </div>
+
+      <!-- Permission Cards (Active) -->
+      <div class="permissions-grid" *ngIf="filterStatus() === 'active'">
+        <div
+          *ngFor="let perm of filteredPermissions(); trackBy: trackById"
+          class="permission-card"
+          [class.editing]="perm.editing"
+        >
+
+          <!-- Method Badge -->
+          <div class="card-method" [style.background]="getMethodColor(perm.method) + '22'" [style.color]="getMethodColor(perm.method)" [style.border-color]="getMethodColor(perm.method) + '55'">
+            {{ perm.method }}
+          </div>
+
+          <!-- VIEW Mode -->
+          <div class="card-body" *ngIf="!perm.editing">
+            <div class="field-row">
+              <div class="field-group">
+                <div class="field-header">
+                  <label class="field-label">Permission Name</label>
+                  <div class="copy-wrapper">
+                    <button class="btn-copy-inline" (click)="copyField(perm.id, 'name', perm.permissionName)" title="Copy Name">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                    <span class="copy-feedback" *ngIf="perm.copiedField === 'name'">Copied!</span>
+                  </div>
+                </div>
+                <div class="field-value monospace clickable" (click)="copyField(perm.id, 'name', perm.permissionName)">{{ perm.permissionName }}</div>
+              </div>
+              <div class="field-group">
+                <div class="field-header">
+                  <label class="field-label">Description</label>
+                  <div class="copy-wrapper">
+                    <button class="btn-copy-inline" (click)="copyField(perm.id, 'desc', perm.description)" title="Copy Description">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                    <span class="copy-feedback" *ngIf="perm.copiedField === 'desc'">Copied!</span>
+                  </div>
+                </div>
+                <div class="field-value clickable" (click)="copyField(perm.id, 'desc', perm.description)">{{ perm.description }}</div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <div class="field-header">
+                  <label class="field-label">End Point</label>
+                  <div class="copy-wrapper">
+                    <button class="btn-copy-inline" (click)="copyField(perm.id, 'endpoint', perm.endpoint)" title="Copy Endpoint">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                    <span class="copy-feedback" *ngIf="perm.copiedField === 'endpoint'">Copied!</span>
+                  </div>
+                </div>
+                <div class="field-value endpoint clickable" (click)="copyField(perm.id, 'endpoint', perm.endpoint)">{{ perm.endpoint }}</div>
+              </div>
+              <div class="field-group field-method">
+                <div class="field-header">
+                  <label class="field-label">Method</label>
+                  <div class="copy-wrapper">
+                    <button class="btn-copy-inline" (click)="copyField(perm.id, 'method', perm.method)" title="Copy Method">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                    <span class="copy-feedback" *ngIf="perm.copiedField === 'method'">Copied!</span>
+                  </div>
+                </div>
+                <div class="field-value clickable" (click)="copyField(perm.id, 'method', perm.method)" [style.color]="getMethodColor(perm.method)">{{ perm.method }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- EDIT Mode -->
+          <div class="card-body edit-mode" *ngIf="perm.editing">
+            <div class="field-row">
+              <div class="field-group">
+                <label class="field-label">Permission Name <span class="req">*</span></label>
+                <input
+                  class="edit-input"
+                  type="text"
+                  [value]="perm.permissionName"
+                  (input)="updateField(perm.id, 'permissionName', $any($event.target).value)"
+                  placeholder="PERMISSION_NAME"
+                />
+              </div>
+              <div class="field-group">
+                <label class="field-label">Description <span class="req">*</span></label>
+                <textarea
+                  class="edit-input edit-textarea"
+                  [value]="perm.description"
+                  (input)="updateField(perm.id, 'description', $any($event.target).value)"
+                  placeholder="Enter description"
+                  rows="2"
+                ></textarea>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label class="field-label">End Point <span class="req">*</span></label>
+                <input
+                  class="edit-input"
+                  type="text"
+                  [value]="perm.endpoint"
+                  (input)="updateField(perm.id, 'endpoint', $any($event.target).value)"
+                  placeholder="/api/endpoint"
+                />
+              </div>
+              <div class="field-group field-method">
+                <label class="field-label">Method <span class="req">*</span></label>
+                <select
+                  class="edit-select"
+                  [value]="perm.method"
+                  (change)="updateField(perm.id, 'method', $any($event.target).value)"
+                >
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="DELETE">DELETE</option>
+                  <option value="PATCH">PATCH</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Actions -->
+          <div class="card-actions">
+            <button
+              id="complete-btn"
+              class="btn-action btn-complete"
+              (click)="completePermission(perm.id)"
+              title="Mark as Complete"
+              *ngIf="perm.status === 'active'"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </button>
+
+            <button
+              id="delete-btn"
+              class="btn-action btn-delete"
+              (click)="deletePermission(perm.id)"
+              title="Delete"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Grouped Permissions (Completed) -->
+      <div class="completed-groups" *ngIf="filterStatus() === 'completed'">
+        <div *ngIf="groupedCompletedPermissions().length === 0" class="empty-state">
+           <div class="empty-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <p class="empty-title">No completed permissions yet</p>
+          <p class="empty-sub">Active permissions will appear here once marked as complete</p>
+        </div>
+
+        <div *ngFor="let group of groupedCompletedPermissions()" class="group-section">
+          <h2 class="group-header">
+            <span class="group-header-text">{{ group.action }} Permissions</span>
+            <span class="group-count">{{ group.items.length }}</span>
+          </h2>
+          <div class="group-list">
+            <div *ngFor="let perm of group.items" class="grouped-item">
+              <div class="grouped-item-content">
+                <span class="grouped-permission-name clickable" (click)="copyField(perm.id, 'name', perm.permissionName)">
+                  {{ perm.permissionName }}
+                </span>
+                <div class="copy-wrapper">
+                  <button class="btn-copy-inline" (click)="copyField(perm.id, 'name', perm.permissionName)" title="Copy Name">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                  <span class="copy-feedback" *ngIf="perm.copiedField === 'name'">Copied!</span>
+                </div>
+              </div>
+              <button class="btn-action-sm btn-delete" (click)="deletePermission(perm.id)" title="Delete Permanently">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="app-footer">
+    <span></span>
+  </footer>
+
+</div>
