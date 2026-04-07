@@ -36,7 +36,7 @@ export class App {
   globalCopied = signal(false);
   deleteOnCopy = signal(false);
   parseError = signal('');
-  isDarkMode = signal(true);
+
 
   // Derived
   filteredPermissions = computed(() => {
@@ -123,11 +123,7 @@ export class App {
     this.step.set('review');
   }
 
-  toggleTheme(): void {
-    this.isDarkMode.update(v => !v);
-    const theme = this.isDarkMode() ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', theme);
-  }
+
 
   private extractPermissions(code: string): ParsedPermission[] {
     const results: ParsedPermission[] = [];
