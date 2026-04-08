@@ -79,7 +79,7 @@
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
-  overflow: hidden;
+  overflow: hidden; /* Constrain height to enable inner scrolling */
 }
 
 /* ===== STEP PANEL ===== */
@@ -429,6 +429,7 @@
   gap: 12px;
   margin-bottom: 1rem;
   flex-shrink: 0;
+  padding: 4px; /* Ensure space for hover effects/shadows */
 }
 
 .step-body {
@@ -457,6 +458,7 @@
   align-items: flex-end;
   gap: 20px;
   flex: 1;
+  overflow: visible;
 }
 
 .minimal-search {
@@ -523,6 +525,7 @@
   justify-content: center;
   width: 36px;
   height: 36px;
+  margin: 0 4px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 50%;
@@ -535,7 +538,7 @@
   background: var(--bg-secondary);
   color: var(--accent-light);
   border-color: var(--border-focus);
-  transform: translateX(-2px);
+  transform: scale(1.05);
   box-shadow: 0 0 12px var(--accent-glow);
 }
 

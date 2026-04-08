@@ -120,6 +120,9 @@ export class App {
     }
 
     this.permissions.set(parsed);
+    this.filterStatus.set('active');
+    this.filterMethod.set('ALL');
+    this.searchQuery.set('');
     this.step.set('review');
   }
 
@@ -381,6 +384,9 @@ export class App {
   goBack(): void {
     this.step.set('input');
     this.parseError.set('');
+    this.filterStatus.set('active');
+    this.filterMethod.set('ALL');
+    this.searchQuery.set('');
   }
 
   getMethodColor(method: string): string {

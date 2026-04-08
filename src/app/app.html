@@ -35,8 +35,8 @@
           <textarea
             id="service-code-input"
             class="code-textarea"
-            [ngModel]="serviceCode()"
-            (ngModelChange)="serviceCode.set($event)"
+            [value]="serviceCode()"
+            (input)="serviceCode.set($any($event.target).value)"
             placeholder="Paste your Angular service TypeScript code here..."
             spellcheck="false"
             autocomplete="off"
@@ -51,8 +51,8 @@
             <input
               class="prefix-input"
               type="text"
-              [ngModel]="servicePrefix()"
-              (ngModelChange)="servicePrefix.set($event)"
+              [value]="servicePrefix()"
+              (input)="servicePrefix.set($any($event.target).value)"
               spellcheck="false"
             />
           </div>
@@ -93,13 +93,12 @@
             <h1 class="toolbar-title">Permissions</h1>
 
             <div class="minimal-search">
-              <label class="search-label">Search</label>
               <input
                 id="search-input"
                 type="text"
                 [ngModel]="searchQuery()"
                 (ngModelChange)="searchQuery.set($event)"
-                placeholder="Type to filter..."
+                placeholder="Search permissions, actions or endpoints..."
                 class="line-input"
               />
               <button class="search-clear-mini" *ngIf="searchQuery()" (click)="searchQuery.set('')">×</button>
