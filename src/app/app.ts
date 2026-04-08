@@ -1,6 +1,7 @@
 import { Component, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { trigger, transition, style, animate } from '@angular/animations';
 
 export interface ParsedPermission {
   id: string;
@@ -21,6 +22,14 @@ export interface ParsedPermission {
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.Default,
+  animations: [
+    trigger('fadeIn', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(10px)' }),
+        animate('0.3s ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+      ])
+    ])
+  ]
 })
 export class App {
   title = 'permission-mapper';
@@ -29,13 +38,39 @@ export class App {
   serviceCode = signal('');
   servicePrefix = signal('');
   permissions = signal<ParsedPermission[]>([]);
-  step = signal<'input' | 'review'>('input');
+  step = signal<'landing' | 'input' | 'review'>('landing');
   searchQuery = signal('');
   filterMethod = signal<string>('ALL');
   filterStatus = signal<'active' | 'completed'>('active');
   globalCopied = signal(false);
   deleteOnCopy = signal(false);
   parseError = signal('');
+  prefixTouched = signal(false);
+
+  detectedMethods = computed(() => {
+    const code = this.serviceCode();
+    const methods = new Set<string>();
+    const patterns = [
+      { regex: /\.getData\(/, method: 'GET' },
+      { regex: /\.postData\(/, method: 'POST' },
+      { regex: /\.putData\(/, method: 'PUT' },
+      { regex: /\.deleteData\(/, method: 'DELETE' },
+      { regex: /\.patchData\(/, method: 'PATCH' },
+      { regex: /\.get\(/, method: 'GET' },
+      { regex: /\.post\(/, method: 'POST' },
+      { regex: /\.put\(/, method: 'PUT' },
+      { regex: /\.delete\(/, method: 'DELETE' },
+      { regex: /\.patch\(/, method: 'PATCH' },
+    ];
+    
+    patterns.forEach(({ regex, method }) => {
+      if (regex.test(code)) {
+        methods.add(method);
+      }
+    });
+    
+    return Array.from(methods);
+  });
 
 
   // Derived
@@ -101,6 +136,7 @@ export class App {
   readonly actionMethods = ['ALL', 'CREATE', 'READ', 'UPDATE', 'DELETE'];
 
   parseServiceCode(): void {
+    this.prefixTouched.set(true);
     const code = this.serviceCode();
     if (!code.trim()) {
       this.parseError.set('Please paste some Angular service code first.');
@@ -382,7 +418,12 @@ export class App {
   }
 
   goBack(): void {
-    this.step.set('input');
+    if (this.step() === 'review') {
+      this.step.set('input');
+    } else {
+      this.step.set('landing');
+    }
+    this.prefixTouched.set(false);
     this.parseError.set('');
     this.filterStatus.set('active');
     this.filterMethod.set('ALL');
