@@ -415,52 +415,30 @@
   </main>
 
   <!-- >>> HISTORY DRAWER <<< -->
-  <div class="drawer-overlay" *ngIf="historyOpen()" (click)="historyOpen.set(false)" @fadeIn></div>
+  <div class="drawer-overlay" *ngIf="historyOpen()" (click)="historyOpen.set(false)"></div>
   
   <div class="history-drawer" *ngIf="historyOpen()" [@slideInOut]>
     <!-- Header Icons -->
+    <div class="gemini-section-header">Recent</div>
+    
+    <!-- Search Bar -->
     <div class="gemini-header">
-      <button class="gemini-icon-btn" (click)="historyOpen.set(false)" title="Menu">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
-      <button class="gemini-icon-btn" title="Search history">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <div class="gemini-search-bar" [class.active]="historySearchQuery()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
         </svg>
-      </button>
+        <input 
+          type="text" 
+          placeholder="Search history..." 
+          class="gemini-search-input"
+          [value]="historySearchQuery()"
+          (input)="historySearchQuery.set($any($event.target).value)"
+        />
+      </div>
     </div>
 
     <div class="drawer-content gemini-content">
-      <!-- Top Actions -->
-      <div class="gemini-nav-list">
-        <button class="gemini-nav-item" (click)="resetMapping()">
-          <svg class="gemini-nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-          <span class="gemini-nav-text">New mapping</span>
-        </button>
-        <button class="gemini-nav-item">
-          <svg class="gemini-nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          <span class="gemini-nav-text">My stuff</span>
-        </button>
-      </div>
-
-      <!-- Gems Section -->
-      <div class="gemini-section">
-        <button class="gemini-nav-item section-btn">
-          <span class="gemini-nav-text">Gems</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </button>
-      </div>
-
-      <!-- Recent Section Header -->
-      <div class="gemini-section-header">Recent</div>
+      <!-- Sessions List -->
 
       <!-- Sessions List -->
       <div class="gemini-chat-list" *ngIf="filteredHistory().length > 0; else emptyHistory">
@@ -488,12 +466,19 @@
           </div>
 
           <div class="chat-actions" (click)="$event.stopPropagation()">
-            <button class="chat-action-btn" (click)="renameHistoryItem(item.id, $event)" title="Rename">
+            <!-- Tick button shown during editing -->
+            <button class="chat-action-btn confirm" *ngIf="editingHistoryId() === item.id" (click)="confirmHistoryRename(item.id, $event)" title="Confirm Rename">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </button>
+            
+            <button class="chat-action-btn" *ngIf="editingHistoryId() !== item.id" (click)="renameHistoryItem(item.id, $event)" title="Rename">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
             </button>
-            <button class="chat-action-btn" (click)="deleteFromHistory(item.id, $event)" title="Delete">
+            <button class="chat-action-btn" *ngIf="editingHistoryId() !== item.id" (click)="deleteFromHistory(item.id, $event)" title="Delete">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
               </svg>
@@ -503,22 +488,11 @@
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="gemini-footer">
-      <button class="gemini-nav-item footer-item">
-        <div class="footer-left">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-          <span class="gemini-nav-text">Settings and help</span>
-        </div>
-        <div class="footer-status"></div>
-      </button>
-    </div>
+
 
     <ng-template #emptyHistory>
       <div class="history-empty gemini-empty">
-        <p>Your history will appear here</p>
+        <!-- Empty as requested -->
       </div>
     </ng-template>
   </div>

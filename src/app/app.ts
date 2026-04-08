@@ -185,6 +185,8 @@ export class App {
     this.prefixTouched.set(false);
   }
 
+
+
   loadFromHistory(item: HistoryItem): void {
     this.serviceCode.set(item.serviceCode);
     this.servicePrefix.set(item.servicePrefix);
@@ -612,11 +614,29 @@ export class App {
   }
 
   goBack(): void {
-    if (this.step() === 'review') {
+    const currentStep = this.step();
+    
+    // Auto-save history BEFORE clearing if we are on review page
+    if (currentStep === 'review') {
+      this.saveToHistory();
+      
+      // Clear fields correctly when coming back from permissions
+      this.serviceCode.set('');
+      this.servicePrefix.set('');
+      this.permissions.set([]);
+      this.currentSessionId.set(null);
       this.step.set('input');
+    } else if (currentStep === 'input') {
+      // If we're on input page and go home, also save if data exists
+      if (this.serviceCode() && this.servicePrefix()) {
+        this.saveToHistory();
+      }
+      this.step.set('landing');
+      this.resetMapping(); // Reuse reset logic
     } else {
       this.step.set('landing');
     }
+    
     this.prefixTouched.set(false);
     this.parseError.set('');
     this.filterStatus.set('active');

@@ -1499,43 +1499,66 @@
 }
 
 /* ===== GEMINI SIDEBAR ===== */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  cursor: pointer;
+}
+
 .history-drawer {
   position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
   width: 320px;
-  background: #1e1f20;
+  background: #000000;
   z-index: 1001;
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
-  box-shadow: none;
+  box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid #111;
 }
 
 .gemini-header {
-  padding: 12px 16px;
+  padding: 8px 16px 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
 }
 
-.gemini-icon-btn {
+.gemini-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #111111;
+  border-radius: 24px;
+  width: 100%;
+  color: #c4c7c5;
+  transition: all 0.2s ease;
+  border: 1px solid #222;
+}
+
+.gemini-search-bar.active {
+  background: #1a1a1a;
+  border-color: #333;
+  color: white;
+}
+
+.gemini-search-input {
   background: transparent;
   border: none;
-  color: #c4c7c5;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  transition: background 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: inherit;
+  font-size: 14px;
+  width: 100%;
+  outline: none;
 }
 
-.gemini-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
+.gemini-search-input::placeholder {
+  color: #80868b;
 }
 
 .gemini-content {
@@ -1546,47 +1569,13 @@
   flex-direction: column;
 }
 
-.gemini-nav-list {
-  padding: 0 12px 8px;
-}
-
-.gemini-nav-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: transparent;
-  border: none;
-  border-radius: 28px;
-  color: #e3e3e3;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-size: 14px;
-}
-
-.gemini-nav-item:hover {
-  background: #2e2f30;
-}
-
-.gemini-nav-icon {
-  color: #c4c7c5;
-}
-
-.gemini-section {
-  padding: 4px 12px;
-}
-
-.section-btn {
-  justify-content: space-between;
-  padding-right: 12px;
-}
-
 .gemini-section-header {
-  padding: 24px 28px 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #e3e3e3;
+  padding: 24px 24px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #80868b;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
 .gemini-chat-list {
@@ -1610,7 +1599,7 @@
 }
 
 .gemini-chat-item:hover {
-  background: #2e2f30;
+  background: #111111;
 }
 
 .gemini-chat-item.active {
@@ -1659,27 +1648,15 @@
   color: white;
 }
 
-.gemini-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 12px;
+.chat-action-btn.confirm {
+  color: #a8c7fa;
 }
 
-.footer-item {
-  justify-content: space-between;
+.chat-action-btn.confirm:hover {
+  background: rgba(168, 199, 250, 0.1);
 }
 
-.footer-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 
-.footer-status {
-  width: 10px;
-  height: 10px;
-  background: #a8c7fa;
-  border-radius: 50%;
-}
 
 .gemini-edit-input {
   background: transparent;
@@ -1693,9 +1670,20 @@
 }
 
 .gemini-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 40px 28px;
-  color: #c4c7c5;
-  font-size: 14px;
+  color: #80868b;
+  text-align: center;
+}
+
+.gemini-empty p {
+  font-size: 11px;
+  font-weight: 400; /* Normal */
+  margin: 0;
 }
 
 .item-action-btn:hover {
