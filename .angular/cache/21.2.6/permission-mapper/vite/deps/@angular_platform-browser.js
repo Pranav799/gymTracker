@@ -14,13 +14,13 @@ import {
   createApplication,
   platformBrowser,
   provideProtractorTestingSupport
-} from "./chunk-GHKSEW4L.js";
+} from "./chunk-DQPJNH75.js";
 import {
   PlatformLocation,
   XhrFactory,
   getDOM,
   parseCookieValue
-} from "./chunk-IWXSJLCD.js";
+} from "./chunk-PVEMMCZB.js";
 import {
   APP_BOOTSTRAP_LISTENER,
   ApplicationRef,
@@ -46,9 +46,6 @@ import {
   TransferState,
   Version,
   XSS_SECURITY_URL,
-  __objRest,
-  __spreadProps,
-  __spreadValues,
   _global,
   _sanitizeHtml,
   _sanitizeUrl,
@@ -88,7 +85,12 @@ import {
   ɵɵdefineInjector,
   ɵɵdefineNgModule,
   ɵɵinject
-} from "./chunk-YTWKOQER.js";
+} from "./chunk-NVQO66H7.js";
+import {
+  __objRest,
+  __spreadProps,
+  __spreadValues
+} from "./chunk-GOMI4DH3.js";
 
 // node_modules/@angular/common/fesm2022/_module-chunk.mjs
 var HttpHeaders = class _HttpHeaders {

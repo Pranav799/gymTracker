@@ -30,7 +30,8 @@ import {
   setClassMetadata,
   ɵɵdefineInjectable,
   ɵɵinject
-} from "./chunk-YTWKOQER.js";
+} from "./chunk-NVQO66H7.js";
+import "./chunk-GOMI4DH3.js";
 
 // node_modules/@angular/animations/fesm2022/animations.mjs
 var AnimationBuilder = class _AnimationBuilder {

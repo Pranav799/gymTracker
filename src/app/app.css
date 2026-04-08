@@ -787,6 +787,28 @@
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
+.btn-icon-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-focus);
+  border-radius: 50%;
+  color: #10b981; /* Excel green always on */
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-right: 12px;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+}
+
+.btn-icon-nav:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+  background: var(--bg-card); /* Slight variation on hover */
+}
+
 .toolbar-title {
   font-size: 1.25rem;
   font-weight: 700;
@@ -1502,8 +1524,7 @@
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.5); /* Semi-transparent dark overlay */
   z-index: 1000;
   cursor: pointer;
 }
@@ -1514,13 +1535,15 @@
   left: 0;
   bottom: 0;
   width: 320px;
-  background: #000000;
+  background: rgba(14, 14, 14, 0.65); /* Translucent background */
+  backdrop-filter: blur(30px) saturate(180%); /* Stronger glassmorphism */
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
   z-index: 1001;
   display: flex;
   flex-direction: column;
-  transition: all 0.3s ease;
-  box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
-  border-right: 1px solid #111;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 25px 0 60px rgba(0, 0, 0, 0.4);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .gemini-header {
@@ -1607,7 +1630,7 @@
 }
 
 .chat-content {
-  flex: 1;
+  width: 100%;
   min-width: 0;
   padding-right: 8px;
 }
@@ -1621,14 +1644,24 @@
 }
 
 .chat-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
   opacity: 0;
-  transition: opacity 0.2s;
+  transform: translateX(100%);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0 16px 0 32px;
+  background: linear-gradient(to left, rgba(10, 10, 10, 0.98) 60%, transparent);
+  z-index: 2;
 }
 
 .gemini-chat-item:hover .chat-actions {
   opacity: 1;
+  transform: translateX(0);
 }
 
 .chat-action-btn {
@@ -1650,6 +1683,18 @@
 
 .chat-action-btn.confirm {
   color: #a8c7fa;
+}
+
+.chat-action-btn.rename {
+  color: #fcd34d; /* Lighter Yellow */
+}
+
+.chat-action-btn.download {
+  color: #10b981; /* Green */
+}
+
+.chat-action-btn.delete {
+  color: #ef4444; /* Red */
 }
 
 .chat-action-btn.confirm:hover {

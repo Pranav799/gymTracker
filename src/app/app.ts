@@ -2,6 +2,7 @@ import { Component, signal, computed, ChangeDetectionStrategy } from '@angular/c
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { trigger, transition, style, animate } from '@angular/animations';
+import * as XLSX from 'xlsx';
 
 export interface ParsedPermission {
   id: string;
@@ -180,9 +181,12 @@ export class App {
     this.permissions.set([]);
     this.currentSessionId.set(null);
     this.historyOpen.set(false);
-    this.step.set('input');
+    this.step.set('landing');
     this.parseError.set('');
     this.prefixTouched.set(false);
+    this.searchQuery.set('');
+    this.filterMethod.set('ALL');
+    this.filterStatus.set('active');
   }
 
 
@@ -358,94 +362,61 @@ export class App {
 
   private extractPermissions(code: string): ParsedPermission[] {
     const results: ParsedPermission[] = [];
+    const lines = code.split('\n');
+    let currentMethodName = '';
 
-    // Match method blocks: methodName(...): ... { ... httpService.xxxData(url) ... }
-    const methodBlockRegex = /(\w+)\s*\([^)]*\)\s*:\s*Observable[^{]*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/g;
+    const httpPatterns = [
+      { method: 'GET', verbs: ['getData', 'get'] },
+      { method: 'POST', verbs: ['postData', 'post'] },
+      { method: 'PUT', verbs: ['putData', 'put'] },
+      { method: 'DELETE', verbs: ['deleteData', 'delete'] },
+      { method: 'PATCH', verbs: ['patchData', 'patch'] },
+    ];
 
-    let match: RegExpExecArray | null;
-    while ((match = methodBlockRegex.exec(code)) !== null) {
-      const methodName = match[1];
-      const body = match[2];
+    for (const line of lines) {
+      // 1. Detect method name: methodName(...) [:] [Observable] {
+      const methodMatch = line.match(/^\s*(?!constructor)(\w+)\s*\([^)]*\)\s*(?::|{)/);
+      if (methodMatch) {
+        currentMethodName = methodMatch[1];
+      }
 
-      // Skip constructor
-      if (methodName === 'constructor') continue;
+      // 2. Check for HTTP calls in the current line
+      for (const pattern of httpPatterns) {
+        for (const verb of pattern.verbs) {
+          // Matches .getData( ... ) or .getData<Type>( ... )
+          const httpRegex = new RegExp(`\\.${verb}(?:<[^>]*>)?\\s*\\(\\s*[\`\'"]([^\`\'"]*)[\`\'"]`);
+          const match = line.match(httpRegex);
+          
+          if (match) {
+            const urlRaw = match[1];
+            // Format URL: Replace expressions with :param
+            const url = urlRaw.replace(/\$\{[^}]+\}/g, ':param').trim();
+            const action = this.getPermissionAction(pattern.method as any);
+            const resourceName = this.camelToPermissionName(currentMethodName || 'API');
+            const permName = `${this.servicePrefix().toUpperCase()}.${resourceName}.${action}`;
+            const desc = this.generateDescription(currentMethodName || 'endpoint', pattern.method, url);
 
-      // Detect HTTP method and URL
-      const httpCall = this.extractHttpCall(body);
-      if (!httpCall) continue;
-
-      const resourceName = this.camelToPermissionName(methodName);
-      const action = this.getPermissionAction(httpCall.method);
-      const permName = `${this.servicePrefix().toUpperCase()}.${resourceName}.${action}`;
-      
-      const desc = this.generateDescription(methodName, httpCall.method, httpCall.url);
-
-      results.push({
-        id: crypto.randomUUID(),
-        permissionName: permName,
-        description: desc,
-        endpoint: ('/kjusys-api/' + httpCall.url).replace(/\/+/g, '/'),
-        method: httpCall.method,
-        copied: false,
-        editing: false,
-        status: 'active',
-      });
-    }
-
-    // Fallback: direct line-by-line extraction
-    if (results.length === 0) {
-      return this.fallbackExtract(code);
+            results.push({
+              id: crypto.randomUUID(),
+              permissionName: permName,
+              description: desc,
+              endpoint: ('/kjusys-api/' + url).replace(/\/+/g, '/'),
+              method: pattern.method as any,
+              copied: false,
+              editing: false,
+              status: 'active',
+            });
+          }
+        }
+      }
     }
 
     return results;
   }
 
   private extractHttpCall(body: string): { method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'; url: string } | null {
-    const patterns: { regex: RegExp; method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' }[] = [
-      { regex: /\.getData\(\s*[`'"]([\s\S]*?)[`'"]\s*\)/, method: 'GET' },
-      { regex: /\.postData\(\s*[`'"]([\s\S]*?)[`'"]\s*[,)]/, method: 'POST' },
-      { regex: /\.putData\(\s*[`'"]([\s\S]*?)[`'"]\s*[,)]/, method: 'PUT' },
-      { regex: /\.deleteData\(\s*[`'"]([\s\S]*?)[`'"]\s*\)/, method: 'DELETE' },
-      { regex: /\.patchData\(\s*[`'"]([\s\S]*?)[`'"]\s*[,)]/, method: 'PATCH' },
-      { regex: /\.get\(\s*[`'"]([\s\S]*?)[`'"]\s*[,)]/, method: 'GET' },
-      { regex: /\.post\(\s*[`'"]([\s\S]*?)[`'"]\s*[,)]/, method: 'POST' },
-      { regex: /\.put\(\s*[`'"]([\s\S]*?)[`'"]\s*[,)]/, method: 'PUT' },
-      { regex: /\.delete\(\s*[`'"]([\s\S]*?)[`'"]\s*[,)]/, method: 'DELETE' },
-      { regex: /\.patch\(\s*[`'"]([\s\S]*?)[`'"]\s*[,)]/, method: 'PATCH' },
-    ];
-
-    for (const { regex, method } of patterns) {
-      const m = body.match(regex);
-      if (m) {
-        // Clean up template literal interpolations for display
-        let url = m[1].replace(/\$\{[^}]+\}/g, ':param').trim();
-        return { method, url };
-      }
-    }
-
-    // Try extracting from a url variable
-    const urlVarMatch = body.match(/(?:const|let|var)\s+url\s*=\s*[`'"]([\s\S]*?)[`'"]/);
-    if (urlVarMatch) {
-      const urlStr = urlVarMatch[1].replace(/\$\{[^}]+\}/g, ':param').trim();
-      // Now find which HTTP method uses this url
-      for (const { regex, method } of patterns) {
-        const altRegex = new RegExp(regex.source.replace(/\[([\s\S]*?)\]/, '[A-Za-z]').toString());
-        const found = body.match(/\.(getData|postData|putData|deleteData|patchData|get|post|put|delete|patch)\s*\(\s*url/);
-        if (found) {
-          const methodMap: Record<string, 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'> = {
-            getData: 'GET', get: 'GET',
-            postData: 'POST', post: 'POST',
-            putData: 'PUT', put: 'PUT',
-            deleteData: 'DELETE', delete: 'DELETE',
-            patchData: 'PATCH', patch: 'PATCH',
-          };
-          return { method: methodMap[found[1]] || 'GET', url: urlStr };
-        }
-      }
-      return { method: 'GET', url: urlStr };
-    }
-
-    return null;
+    // This is now redundant but kept for any legacy usage or fallback
+    return null; 
   }
 
   private fallbackExtract(code: string): ParsedPermission[] {
@@ -467,7 +438,7 @@ export class App {
 
     let currentMethod = '';
     for (const line of lines) {
-      // Capture method name
+      // Capture method name: methodName(...) : Observable<...>
       const fnMatch = line.match(/^\s*(\w+)\s*\([^)]*\)\s*:\s*Observable/);
       if (fnMatch) {
         currentMethod = fnMatch[1];
@@ -540,6 +511,46 @@ export class App {
   }
 
   // === Actions ===
+
+  downloadExcel(perms: ParsedPermission[], filenamePrefix: string = 'permissions'): void {
+    if (!perms || perms.length === 0) return;
+
+    // Map data to the required 4 columns
+    const data = perms.map(p => ({
+      'Permission Name': p.permissionName,
+      'Description': p.description,
+      'End Point': p.endpoint,
+      'Method': p.method
+    }));
+
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    
+    // Set column widths for better readability
+    const wscols = [
+      { wch: 40 }, // Permission Name
+      { wch: 60 }, // Description
+      { wch: 50 }, // End Point
+      { wch: 10 }  // Method
+    ];
+    worksheet['!cols'] = wscols;
+
+    // Create workbook and append worksheet
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Permissions');
+
+    // Generate filename
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `${filenamePrefix}_${date}.xlsx`;
+
+    // Download file
+    XLSX.writeFile(workbook, filename);
+  }
+
+  downloadCurrentPermissions(): void {
+    const prefix = this.servicePrefix() || 'permissions';
+    this.downloadExcel(this.permissions(), `permissions_${prefix}`);
+  }
 
   copyField(id: string, field: string, value: string): void {
     navigator.clipboard.writeText(value).then(() => {
