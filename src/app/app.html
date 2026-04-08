@@ -72,7 +72,10 @@
           <div class="info-card methods-card" @fadeIn>
             <h3 class="info-title">Detected Methods</h3>
             <div class="method-tags" *ngIf="detectedMethods().length > 0">
-              <span *ngFor="let m of detectedMethods()" class="method-tag" [style.background]="getMethodColor(m) + '22'" [style.color]="getMethodColor(m)">
+              <span *ngFor="let m of detectedMethods()" class="method-tag" 
+                [style.background]="getMethodColor(m) + '15'" 
+                [style.color]="getMethodColor(m)"
+                [style.border-color]="getMethodColor(m) + '33'">
                 {{ m }}
               </span>
             </div>

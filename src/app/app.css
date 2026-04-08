@@ -301,13 +301,19 @@
 }
 
 .method-tag {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
-  background: #0a0a0a !important;
-  border: 1px solid rgba(255,255,255,0.05);
+  padding: 4px 12px;
+  border-radius: 100px; /* Pill shape */
+  letter-spacing: 0.3px;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid; /* Static color removed, logic handles it in template */
+  transition: all 0.2s ease;
+}
+
+.method-tag:hover {
+  transform: scale(1.05);
+  border-color: currentColor;
 }
 
 .methods-empty {
@@ -342,15 +348,30 @@
 .btn-analyze {
   margin-top: auto;
   align-self: stretch;
-  padding: 12px 18px !important;
-  font-size: 0.82rem !important;
+  padding: 14px 18px !important;
+  font-size: 0.95rem !important;
   border-radius: 12px !important;
   width: 100% !important;
-  font-weight: 600;
+  font-weight: 700 !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-analyze:hover {
+  background: linear-gradient(135deg, var(--accent-light), var(--accent)) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(108, 99, 255, 0.45) !important;
+}
+
+.btn-analyze:active {
+  transform: translateY(0);
 }
 
 /* ===== LANDING PAGE ===== */
