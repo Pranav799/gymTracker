@@ -15,6 +15,17 @@ export interface ParsedPermission {
   copiedField?: string;
 }
 
+export interface HistoryItem {
+  id: string;
+  name: string;
+  timestamp: number;
+  serviceCode: string;
+  servicePrefix: string;
+  permissions: ParsedPermission[];
+  description: string;
+  tags: string[];
+}
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -27,6 +38,15 @@ export interface ParsedPermission {
       transition(':enter', [
         style({ opacity: 0, transform: 'translateY(10px)' }),
         animate('0.3s ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+      ])
+    ]),
+    trigger('slideInOut', [
+      transition(':enter', [
+        style({ transform: 'translateX(-100%)' }),
+        animate('0.3s cubic-bezier(0.4, 0, 0.2, 1)', style({ transform: 'translateX(0)' }))
+      ]),
+      transition(':leave', [
+        animate('0.3s cubic-bezier(0.4, 0, 0.2, 1)', style({ transform: 'translateX(-100%)' }))
       ])
     ])
   ]
@@ -46,6 +66,175 @@ export class App {
   deleteOnCopy = signal(false);
   parseError = signal('');
   prefixTouched = signal(false);
+
+  // History signals
+  history = signal<HistoryItem[]>([]);
+  historyOpen = signal(false);
+  currentSessionId = signal<string | null>(null);
+  editingHistoryId = signal<string | null>(null);
+  tempHistoryName = signal<string>('');
+  tempHistoryDesc = signal<string>('');
+  tempHistoryTags = signal<string>('');
+  historySearchQuery = signal<string>('');
+
+  constructor() {
+    this.loadHistoryFromStorage();
+  }
+
+  private loadHistoryFromStorage(): void {
+    const stored = localStorage.getItem('perm_mapper_history');
+    if (stored) {
+      try {
+        this.history.set(JSON.parse(stored));
+      } catch (e) {
+        console.error('Failed to load history', e);
+      }
+    }
+  }
+
+  private persistHistory(): void {
+    localStorage.setItem('perm_mapper_history', JSON.stringify(this.history()));
+  }
+
+  saveToHistory(): void {
+    const code = this.serviceCode();
+    const prefix = this.servicePrefix();
+    const perms = this.permissions();
+
+    if (!code || !prefix) return;
+
+    const existingId = this.currentSessionId();
+    const history = [...this.history()];
+    
+    if (existingId) {
+      const index = history.findIndex(h => h.id === existingId);
+      if (index !== -1) {
+        history[index] = {
+          ...history[index],
+          timestamp: Date.now(),
+          serviceCode: code,
+          servicePrefix: prefix,
+          permissions: perms,
+          description: this.generateHistorySummary(perms)
+        };
+      } else {
+        // Fallback if ID was lost
+        this.createNewHistoryItem(history, code, prefix, perms);
+      }
+    } else {
+      this.createNewHistoryItem(history, code, prefix, perms);
+    }
+
+    this.history.set(history);
+    this.persistHistory();
+  }
+
+  private createNewHistoryItem(history: HistoryItem[], code: string, prefix: string, perms: ParsedPermission[]): void {
+    const newItem: HistoryItem = {
+      id: crypto.randomUUID(),
+      name: `${prefix} - ${new Date().toLocaleDateString()}`,
+      timestamp: Date.now(),
+      serviceCode: code,
+      servicePrefix: prefix,
+      permissions: perms,
+      description: this.generateHistorySummary(perms),
+      tags: []
+    };
+    history.unshift(newItem); // Newest first
+    this.currentSessionId.set(newItem.id);
+  }
+
+  private generateHistorySummary(perms: ParsedPermission[]): string {
+    const counts: Record<string, number> = {};
+    perms.forEach(p => {
+      const action = this.getPermissionAction(p.method);
+      counts[action] = (counts[action] || 0) + 1;
+    });
+
+    return Object.entries(counts)
+      .map(([action, count]) => `${count} ${action}`)
+      .join(', ') || 'No permissions mapped';
+  }
+
+  getHistoryMethods(perms: ParsedPermission[]): {method: string, count: number}[] {
+    const counts: Record<string, number> = {};
+    perms.forEach(p => {
+      counts[p.method] = (counts[p.method] || 0) + 1;
+    });
+    return Object.entries(counts).map(([method, count]) => ({ method, count }));
+  }
+
+  filteredHistory = computed(() => {
+    const query = this.historySearchQuery().toLowerCase().trim();
+    if (!query) return this.history();
+    return this.history().filter(h => 
+      h.name.toLowerCase().includes(query) || 
+      h.description.toLowerCase().includes(query) ||
+      h.tags.some(t => t.toLowerCase().includes(query))
+    );
+  });
+
+  resetMapping(): void {
+    this.serviceCode.set('');
+    this.servicePrefix.set('');
+    this.permissions.set([]);
+    this.currentSessionId.set(null);
+    this.historyOpen.set(false);
+    this.step.set('input');
+    this.parseError.set('');
+    this.prefixTouched.set(false);
+  }
+
+  loadFromHistory(item: HistoryItem): void {
+    this.serviceCode.set(item.serviceCode);
+    this.servicePrefix.set(item.servicePrefix);
+    this.permissions.set([...item.permissions]);
+    this.currentSessionId.set(item.id);
+    this.step.set('review');
+    this.historyOpen.set(false);
+  }
+
+  deleteFromHistory(id: string, event: Event): void {
+    event.stopPropagation();
+    const updated = this.history().filter(h => h.id !== id);
+    this.history.set(updated);
+    this.persistHistory();
+    if (this.currentSessionId() === id) {
+      this.currentSessionId.set(null);
+    }
+  }
+
+  renameHistoryItem(id: string, event: Event): void {
+    event.stopPropagation();
+    const item = this.history().find(h => h.id === id);
+    if (!item) return;
+
+    this.editingHistoryId.set(id);
+    this.tempHistoryName.set(item.name);
+    this.tempHistoryDesc.set(item.description);
+    this.tempHistoryTags.set((item.tags || []).join(', '));
+  }
+
+  confirmHistoryRename(id: string, event: Event): void {
+    event.stopPropagation();
+    const newName = this.tempHistoryName().trim();
+    const newDesc = this.tempHistoryDesc().trim();
+    const newTags = this.tempHistoryTags().split(',').map(t => t.trim()).filter(t => !!t);
+    
+    if (newName) {
+      const updated = this.history().map(h => 
+        h.id === id ? { ...h, name: newName, description: newDesc, tags: newTags } : h
+      );
+      this.history.set(updated);
+      this.persistHistory();
+    }
+    this.editingHistoryId.set(null);
+  }
+
+  cancelHistoryRename(event: Event): void {
+    event.stopPropagation();
+    this.editingHistoryId.set(null);
+  }
 
   detectedMethods = computed(() => {
     const code = this.serviceCode();
@@ -160,6 +349,7 @@ export class App {
     this.filterMethod.set('ALL');
     this.searchQuery.set('');
     this.step.set('review');
+    this.saveToHistory();
   }
 
 
@@ -375,6 +565,7 @@ export class App {
     this.permissions.update(perms =>
       perms.map(x => x.id === id ? { ...x, status: 'completed' } : x)
     );
+    this.saveToHistory();
   }
 
   private formatPermission(p: ParsedPermission): string {
@@ -391,16 +582,19 @@ export class App {
     this.permissions.update(perms =>
       perms.map(x => x.id === p.id ? { ...x, editing: false } : x)
     );
+    this.saveToHistory();
   }
 
   updateField(id: string, field: keyof ParsedPermission, value: string): void {
     this.permissions.update(perms =>
       perms.map(x => x.id === id ? { ...x, [field]: value } : x)
     );
+    this.saveToHistory();
   }
 
   deletePermission(id: string): void {
     this.permissions.update(perms => perms.filter(x => x.id !== id));
+    this.saveToHistory();
   }
 
   addPermission(): void {
